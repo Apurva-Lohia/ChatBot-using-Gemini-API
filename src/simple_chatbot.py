@@ -11,7 +11,7 @@ st.set_page_config(
     layout="centered",  
 )
 
-st.title("🤖 Gemini Pro - ChatBot")
+st.title("ChatBot")
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
