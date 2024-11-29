@@ -6,7 +6,7 @@ import time
 
 
 st.set_page_config(
-    page_title="🤖 Gemini Pro - ChatBot",
+    page_title="ChatBot",
     page_icon=":brain:",  # Favicon emoji
     layout="centered",  
 )
