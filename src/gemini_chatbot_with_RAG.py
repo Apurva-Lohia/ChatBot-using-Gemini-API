@@ -46,10 +46,14 @@ model = gen_ai.GenerativeModel(
 if "chat_session" not in st.session_state:
     st.session_state.chat_session = model.start_chat(history = [])
 
-# Check if the history is empty before trying to access it
-if st.session_state.chat_session.history:
-    # Display only the most recent exchange in the history
-    for message in st.session_state.chat_session.history[-1:]:  # Only display the latest message
+# # Check if the history is empty before trying to access it
+# if st.session_state.chat_session.history:
+#     # Display only the most recent exchange in the history
+#     for message in st.session_state.chat_session.history[-1:]:  # Only display the latest message
+#         with st.chat_message(message.role):
+#             st.markdown(message.parts[0].text)
+
+for message in st.session_state.chat_session.history:  
         with st.chat_message(message.role):
             st.markdown(message.parts[0].text)
 
