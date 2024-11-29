@@ -1,0 +1,4 @@
+.env
+__pycache__/
+src/chat_history.json
+experiments/
