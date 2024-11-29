@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: ChatBot-using-Gemini-API
+Version: 0.0.1
+Author: apurva lohia
+Author-email: lohiaapurva@gmail.com
+Requires-Dist: google-generativeai
+Requires-Dist: streamlit
+Requires-Dist: python-dotenv
+Requires-Dist: PyPDF2

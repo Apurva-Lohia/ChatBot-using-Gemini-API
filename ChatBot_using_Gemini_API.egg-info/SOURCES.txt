@@ -1,0 +1,10 @@
+setup.py
+ChatBot_using_Gemini_API.egg-info/PKG-INFO
+ChatBot_using_Gemini_API.egg-info/SOURCES.txt
+ChatBot_using_Gemini_API.egg-info/dependency_links.txt
+ChatBot_using_Gemini_API.egg-info/requires.txt
+ChatBot_using_Gemini_API.egg-info/top_level.txt
+src/RAG_and_chat_history.py
+src/__init__.py
+src/gemini_chatbot_with_RAG.py
+src/mongodb_embeddings.py
