@@ -28,8 +28,21 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
 gen_ai.configure(api_key=GOOGLE_API_KEY)
-model = gen_ai.GenerativeModel('gemini-flash')
-    
+
+# Chat model configuration
+chat_generation_config = {
+    "temperature": 2,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+}
+
+gen_ai.configure(api_key=GOOGLE_API_KEY)
+model = gen_ai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=chat_generation_config,
+)    
+
 if "chat_session" not in st.session_state:
     st.session_state.chat_session = model.start_chat(history = [])
 
