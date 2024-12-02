@@ -49,7 +49,7 @@ if "chat_session" not in st.session_state:
 # Check if the history is empty before trying to access it
 if st.session_state.chat_session.history:
     # Display only the most recent exchange in the history
-    for message in st.session_state.chat_session.history[-1:]:  # Only display the latest message
+    for message in st.session_state.chat_session.history[-1:]:  
         with st.chat_message(message.role):
             st.markdown(message.parts[0].text)
 
@@ -75,7 +75,8 @@ def response_generator_with_user_docs(prompt, user_docs):
     return response
 
 if prompt := st.chat_input("Say something..."):
-    #st.session_state.chat_session.history.append({"role": "user", "parts": [{"text": prompt}]})
+    #st.session_state.chat_session.history.append(
+    # {"role": "user", "parts": [{"text": prompt}]})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -90,9 +91,11 @@ if prompt := st.chat_input("Say something..."):
 
         for word in response.text.split():
             full_response += word + " "
-            placeholder.write(full_response + "▌")  # Update the placeholder dynamically
+            # Update the placeholder dynamically
+            placeholder.write(full_response + "▌")  
             time.sleep(0.05)
 
-    #st.session_state.chat_session.history.append({"role": "assistant", "parts": [{"text": response.text}]})
+    #st.session_state.chat_session.history.append(
+    # {"role": "assistant", "parts": [{"text": response.text}]})
 
     
