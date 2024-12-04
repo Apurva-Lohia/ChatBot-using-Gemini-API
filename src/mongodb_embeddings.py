@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
 import streamlit as st
 import numpy as np
-
+import pandas as pd
 
 # Connect to MongoDB
 mongo_client = MongoClient("mongodb://localhost:27017/Test")
@@ -19,9 +19,13 @@ def extract_text_from_file(file):
     elif file.name.endswith(".pdf"):
         pdf_reader = PdfReader(file)
         return " ".join(page.extract_text() for page in pdf_reader.pages)
+    elif file.name.endswith((".xls", ".xlsx")):
+        # Read Excel file into a DataFrame
+        excel_data = pd.read_excel(file)
+        # Convert the DataFrame into a text representation
+        return excel_data.to_string(index=False)
     else:
-        st.error("Unsupported file type!", icon="🚨")
-        return ""
+        return None
 
 def generate_text_embeddings(uploaded_files):
     """
@@ -41,7 +45,7 @@ def generate_text_embeddings(uploaded_files):
                 })
     return user_uploaded_docs
 
-def search_user_uploaded_docs(query, user_docs, top_k=1):
+def search_user_uploaded_docs(query, user_docs, top_k):
     """
     Searches for the most relevant content in the user's uploaded files.
 """
@@ -60,6 +64,3 @@ def search_user_uploaded_docs(query, user_docs, top_k=1):
     ]
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
     return [res["text"] for res in sorted_results[:top_k]]
-
-
-

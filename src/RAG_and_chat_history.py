@@ -6,6 +6,10 @@ import time
 from mongodb_embeddings import search_user_uploaded_docs, generate_text_embeddings
 import json
 import datetime
+import base64
+from PIL import Image
+from PyPDF2 import PdfReader
+import pandas as pd
 
 # Set the Streamlit page config
 st.set_page_config(
@@ -44,21 +48,18 @@ chat_generation_config["temperature"] = st.sidebar.slider(
     value=chat_generation_config["temperature"], 
     step=0.1
 )
-
 chat_generation_config["top_p"] = st.sidebar.slider(
     "Top-p", 
     min_value=0.0, max_value=1.0, 
     value=chat_generation_config["top_p"], 
     step=0.05
 )
-
 chat_generation_config["top_k"] = st.sidebar.slider(
     "Top-k", 
     min_value=0, max_value=100, 
     value=chat_generation_config["top_k"], 
     step=1
 )
-
 # Add input box for max_output_tokens
 chat_generation_config["max_output_tokens"] = st.sidebar.number_input(
     "Max Output Tokens", 
@@ -69,14 +70,10 @@ chat_generation_config["max_output_tokens"] = st.sidebar.number_input(
 
 # Allow file upload for user documents
 uploaded_files = st.file_uploader(
-    "Attach documents here (txt or pdf)",
-    type=["txt", "pdf"],
+    "Attach documents here (txt, pdf, png, jpg, jpeg, xls, xlsx)",
+    type=["txt", "pdf", "png", "jpg", "jpeg", "xls", "xlsx"],
     accept_multiple_files=True,
 )
-if uploaded_files:
-    user_uploaded_docs = generate_text_embeddings(uploaded_files)
-
-
 
 # To store chat histories
 if "chat_sessions" not in st.session_state:
@@ -112,8 +109,6 @@ if existing_chats:
         )
 else:
     selected_chat = None
-
-
 
 # If no chat is selected, start a new one
 if selected_chat is None and st.session_state.current_chat_session_id is None:
@@ -153,40 +148,95 @@ def response_generator(prompt):
     response = st.session_state.chat_session_object.send_message(prompt)
     return response
 
-# Function to send user message and get response
+def extract_text_from_file(file):
+    if file.name.endswith(".txt"):
+        return file.read().decode("utf-8")
+    elif file.name.endswith(".pdf"):
+        pdf_reader = PdfReader(file)
+        return " ".join(page.extract_text() for page in pdf_reader.pages)
+    elif file.name.endswith((".xls", ".xlsx")):
+        # Read Excel file into a DataFrame
+        excel_data = pd.read_excel(file)
+        # Convert the DataFrame into a text representation
+        return excel_data.to_string(index=False)
+    else:
+        return None
+    
 def response_generator_with_user_docs(prompt, user_docs):
-    """
-    Generates a response using the user's prompt and relevant context
-    from uploaded documents, but only returns the final answer.
-    """
-    # Retrieve relevant contexts from user-uploaded documents
-    relevant_contexts = search_user_uploaded_docs(prompt, user_docs, top_k=1)
-    combined_context = " ".join(relevant_contexts)
+    combined_text = ""
+    for doc in user_docs:
+        extracted_text = extract_text_from_file(doc)
+        combined_text = combined_text + " ".join(extracted_text)
 
     # Combine prompt and context internally
-    combined_input = f"{combined_context}\n{prompt}"
+    combined_input = f"{combined_text}\n{prompt}"
 
     response = st.session_state.chat_session_object.send_message(combined_input)
 
     return response
-
-if prompt := st.chat_input("Say something..."):
-    # Save the user's message
-    user_message = {"role": "user", "parts": {"text": prompt}}
-    st.session_state.chat_sessions[selected_chat].append(user_message)
     
-    # Show the user message in the chat
-    with st.chat_message("user"):
-        st.markdown(prompt)
+# Function to send user message and get response
+# def response_generator_with_user_docs(prompt, user_docs):
+#     """
+#     Generates a response using the user's prompt and relevant context
+#     from uploaded documents, but only returns the final answer.
+#     """
+#     # Retrieve relevant contexts from user-uploaded documents
+#     relevant_contexts = search_user_uploaded_docs(prompt, user_docs, top_k=len(user_docs)+1)
+#     combined_context = " ".join(relevant_contexts)
 
-    # Process the response based on document uploads
-    if uploaded_files:
-        response = response_generator_with_user_docs(prompt, user_uploaded_docs)
-    else:
-        response = response_generator(prompt)
+#     # Combine prompt and context internally
+#     combined_input = f"{combined_context}\n{prompt}"
 
-    # Display assistant's response
-    assistant_message = {"role": "model", "parts": {"text": response.text}}
+#     response = st.session_state.chat_session_object.send_message(combined_input)
+
+#     return response
+
+# def response_generator_with_images(uploaded_file, prompt):
+#     """generates response to a query about a image file
+#     """
+
+#     image = Image.open(uploaded_file)
+#     image_format = image.format.lower()  # e.g., 'png', 'jpeg'
+#     uploaded_file.seek(0)  # Reset file pointer for re-reading
+    
+#     # Convert the uploaded image to Base64
+#     image_b64_string = base64.b64encode(uploaded_file.read()).decode("utf-8")
+
+#     # Prepare Gemini-compatible input
+#     # model_input = {
+#     #     "role": "user",
+#     #     "parts": {
+#     #         "image":{
+#     #             "mime_type": f"image/{image_format}",
+#     #             "data": image_b64_string,
+#     #         },
+#     #         "text" : prompt
+#     #     },
+#     # }
+
+#     # response = st.session_state.chat_session_object.send_message(model_input)
+#     # send_messsage does not suport multi-modal input 
+#     response = model.generate_content([{'mime_type':'image/{image_format}','data': image_b64_string},prompt])
+#     return response
+
+def response_generator_with_images(user_uploaded_images, prompt):
+    """generates response to a query about a image file
+    """
+    for image_file in user_uploaded_images:
+        image = Image.open(image_file)
+        image_format = image.format.lower()  # e.g., 'png', 'jpeg'
+        image_file.seek(0)  # Reset file pointer for re-reading
+        
+        # Convert the uploaded image to Base64
+        image_b64_string = base64.b64encode(uploaded_file.read()).decode("utf-8")
+        response = model.generate_content([{'mime_type':'image/{image_format}','data': image_b64_string},prompt])
+        print_response(response)
+
+def print_response(response):
+    """prints the response word-by-word
+    """
+    assistant_message = {"role": "model", "parts": {"text": response}}
     st.session_state.chat_sessions[selected_chat].append(assistant_message)
 
     with st.chat_message("assistant"):
@@ -199,6 +249,52 @@ if prompt := st.chat_input("Say something..."):
             placeholder.write(full_response + "▌")  
             time.sleep(0.05)
 
-    # Optionally, store chat history to disk in JSON format for persistence
-    with open("chat_history.json", "w") as f:
-        json.dump(st.session_state.chat_sessions, f)
+
+if prompt := st.chat_input("Say something..."):
+    # Save the user's message
+    user_message = {"role": "user", "parts": {"text": prompt}}
+    st.session_state.chat_sessions[selected_chat].append(user_message)
+    
+    # Show the user message in the chat
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    #Process the response based on document uploads
+    if uploaded_files:
+        user_uploaded_docs = []
+        user_uploaded_images = []
+        for uploaded_file in uploaded_files:
+            if uploaded_file.name.endswith(('txt','pdf','TXT','PDF', 'xls', 'xlsx', 'XLS', 'XLSX')):
+                user_uploaded_docs.append(uploaded_file)
+                # embeddings = generate_text_embeddings(user_uploaded_docs)
+                # response = response_generator_with_user_docs(prompt, user_uploaded_docs)
+
+                # relevant_contexts = search_user_uploaded_docs(prompt, user_uploaded_docs, top_k=1)
+                # combined_context = " ".join(relevant_contexts)
+                # # Combine prompt and context internally
+                # combined_input = f"{combined_context}\n{prompt}"
+
+                #response = st.session_state.chat_session_object.send_message(combined_input)
+                #print_response(response)
+
+            elif uploaded_file.name.endswith(('jpg','jpeg','png','JPG','PNG','JPEG')):
+                user_uploaded_images.append(uploaded_file)
+                # response = response_generator_with_images(uploaded_file, prompt)
+                # print_response(response)
+            else:
+                st.error("Unsupported file type!", icon="🚨")
+        if user_uploaded_docs:
+            #embeddings = generate_text_embeddings(user_uploaded_docs)
+            response = response_generator_with_user_docs(prompt, user_uploaded_docs)
+            print_response(response)
+        else:
+            response_generator_with_images(user_uploaded_images, prompt)
+            # print_response(response)
+    else:
+        response = response_generator(prompt)
+        print_response(response)
+
+
+    # # Optionally, store chat history to disk in JSON format for persistence
+    # with open("chat_history.json", "w") as f:
+    #     json.dump(st.session_state.chat_sessions, f)
