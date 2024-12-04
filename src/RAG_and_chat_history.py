@@ -148,49 +148,48 @@ def response_generator(prompt):
     response = st.session_state.chat_session_object.send_message(prompt)
     return response
 
-def extract_text_from_file(file):
-    if file.name.endswith(".txt"):
-        return file.read().decode("utf-8")
-    elif file.name.endswith(".pdf"):
-        pdf_reader = PdfReader(file)
-        return " ".join(page.extract_text() for page in pdf_reader.pages)
-    elif file.name.endswith((".xls", ".xlsx")):
-        # Read Excel file into a DataFrame
-        excel_data = pd.read_excel(file)
-        # Convert the DataFrame into a text representation
-        return excel_data.to_string(index=False)
-    else:
-        return None
+# def extract_text_from_file(file):
+#     if file.name.endswith(".txt"):
+#         return file.read().decode("utf-8")
+#     elif file.name.endswith(".pdf"):
+#         pdf_reader = PdfReader(file)
+#         return " ".join(page.extract_text() for page in pdf_reader.pages)
+#     elif file.name.endswith((".xls", ".xlsx")):
+#         # Read Excel file into a DataFrame
+#         excel_data = pd.read_excel(file)
+#         # Convert the DataFrame into a text representation
+#         return excel_data.to_string(index=False)
+#     else:
+#         return None
     
-def response_generator_with_user_docs(prompt, user_docs):
-    combined_text = ""
-    for doc in user_docs:
-        extracted_text = extract_text_from_file(doc)
-        combined_text = combined_text + " ".join(extracted_text)
-
-    # Combine prompt and context internally
-    combined_input = f"{combined_text}\n{prompt}"
-
-    response = st.session_state.chat_session_object.send_message(combined_input)
-
-    return response
-    
-# Function to send user message and get response
 # def response_generator_with_user_docs(prompt, user_docs):
-#     """
-#     Generates a response using the user's prompt and relevant context
-#     from uploaded documents, but only returns the final answer.
-#     """
-#     # Retrieve relevant contexts from user-uploaded documents
-#     relevant_contexts = search_user_uploaded_docs(prompt, user_docs, top_k=len(user_docs)+1)
-#     combined_context = " ".join(relevant_contexts)
+#     combined_text = ""
+#     for doc in user_docs:
+#         extracted_text = extract_text_from_file(doc)
+#         combined_text = combined_text + " ".join(extracted_text)
 
 #     # Combine prompt and context internally
-#     combined_input = f"{combined_context}\n{prompt}"
+#     combined_input = f"{combined_text}\n{prompt}"
 
 #     response = st.session_state.chat_session_object.send_message(combined_input)
 
 #     return response
+    
+def response_generator_with_user_docs(prompt, user_docs):
+    """
+    Generates a response using the user's prompt and relevant context
+    from uploaded documents, but only returns the final answer.
+    """
+    # Retrieve relevant contexts from user-uploaded documents
+    relevant_contexts = search_user_uploaded_docs(prompt, user_docs, top_k=len(user_docs)+1)
+    combined_context = " ".join(relevant_contexts)
+
+    # Combine prompt and context internally
+    combined_input = f"{combined_context}\n{prompt}"
+
+    response = st.session_state.chat_session_object.send_message(combined_input)
+
+    return response
 
 # def response_generator_with_images(uploaded_file, prompt):
 #     """generates response to a query about a image file
@@ -266,17 +265,6 @@ if prompt := st.chat_input("Say something..."):
         for uploaded_file in uploaded_files:
             if uploaded_file.name.endswith(('txt','pdf','TXT','PDF', 'xls', 'xlsx', 'XLS', 'XLSX')):
                 user_uploaded_docs.append(uploaded_file)
-                # embeddings = generate_text_embeddings(user_uploaded_docs)
-                # response = response_generator_with_user_docs(prompt, user_uploaded_docs)
-
-                # relevant_contexts = search_user_uploaded_docs(prompt, user_uploaded_docs, top_k=1)
-                # combined_context = " ".join(relevant_contexts)
-                # # Combine prompt and context internally
-                # combined_input = f"{combined_context}\n{prompt}"
-
-                #response = st.session_state.chat_session_object.send_message(combined_input)
-                #print_response(response)
-
             elif uploaded_file.name.endswith(('jpg','jpeg','png','JPG','PNG','JPEG')):
                 user_uploaded_images.append(uploaded_file)
                 # response = response_generator_with_images(uploaded_file, prompt)
@@ -284,8 +272,8 @@ if prompt := st.chat_input("Say something..."):
             else:
                 st.error("Unsupported file type!", icon="🚨")
         if user_uploaded_docs:
-            #embeddings = generate_text_embeddings(user_uploaded_docs)
-            response = response_generator_with_user_docs(prompt, user_uploaded_docs)
+            embeddings = generate_text_embeddings(user_uploaded_docs)
+            response = response_generator_with_user_docs(prompt, embeddings)
             print_response(response)
         else:
             response_generator_with_images(user_uploaded_images, prompt)
